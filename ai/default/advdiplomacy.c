@@ -182,7 +182,7 @@ static bool shared_vision_is_safe(struct player* pplayer,
     if (gives_shared_vision(aplayer, eplayer)) {
       enum diplstate_type ds = player_diplstate_get(pplayer, eplayer)->type;
 
-      if (ds != DS_NO_CONTACT && ds != DS_ALLIANCE) {
+      if (ds != DS_NO_CONTACT && ds != DS_ALLIANCE && ds != DS_SUBJECT && ds != DS_OVERLORD) {
         return FALSE;
       }
     }
@@ -758,6 +758,12 @@ static int dai_war_desire(struct ai_type *ait, struct player *pplayer,
   struct adv_data *adv = adv_data_get(pplayer, NULL);
   int want = 0, fear = 0, distance = 0, settlers = 0, cities = 0;
   struct player_spaceship *ship = &target->spaceship;
+  struct player *target_overlord;
+
+  if ((target_overlord = get_player_overlord(target)) != NULL) {
+    /* If target has an overlord, use war desire for overlord instead */
+    return dai_war_desire(ait, pplayer, target_overlord);
+  }
 
   city_list_iterate(target->cities, pcity) {
     want += 100; /* base city want */
@@ -1647,6 +1653,8 @@ void dai_diplomacy_actions(struct ai_type *ait, struct player *pplayer)
     case DS_TEAM:
       dai_share(pplayer, aplayer);
       break;
+    case DS_SUBJECT:
+    case DS_OVERLORD:
     case DS_ALLIANCE:
       /* See if our allies are diligently declaring war on our enemies... */
       if (adip->at_war_with_ally) {

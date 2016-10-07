@@ -79,6 +79,7 @@
 #include "tech.h"
 #include "unitlist.h"
 #include "version.h"
+#include "war.h"
 
 /* generator */
 #include "mapgen.h"
@@ -2872,6 +2873,7 @@ void server_game_init(void)
 
   event_cache_init();
   trigger_cache_init();
+  war_cache_init();
   game_init();
   /* game_init() set game.server.plr_colors to NULL. So we need to
    * initialize the colors after. */
@@ -2920,6 +2922,7 @@ void server_game_free(void)
 
   event_cache_free();
   trigger_cache_free();
+  war_cache_free();
   log_civ_score_free();
   playercolor_free();
   citymap_free();

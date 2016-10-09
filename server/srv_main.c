@@ -118,6 +118,7 @@
 #include "srv_log.h"
 #include "stdinhand.h"
 #include "techtools.h"
+#include "triggers.h"
 #include "unithand.h"
 #include "unittools.h"
 #include "voting.h"

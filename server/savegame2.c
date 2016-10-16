@@ -130,6 +130,7 @@
 #include "specialist.h"
 #include "unit.h"
 #include "unitlist.h"
+#include "war.h"
 
 /* server */
 #include "aiiface.h"
@@ -151,6 +152,7 @@
 #include "srv_main.h"
 #include "stdinhand.h"
 #include "techtools.h"
+#include "triggers.h"
 #include "unittools.h"
 
 /* server/advisors */
@@ -544,6 +546,12 @@ static void sg_save_player_vision(struct savedata *saving,
 static void sg_load_event_cache(struct loaddata *loading);
 static void sg_save_event_cache(struct savedata *saving);
 
+static void sg_load_trigger_cache(struct loaddata *loading);
+static void sg_save_trigger_cache(struct savedata *saving);
+
+static void sg_load_wars(struct loaddata *loading);
+static void sg_save_wars(struct savedata *saving);
+
 static void sg_load_mapimg(struct loaddata *loading);
 static void sg_save_mapimg(struct savedata *saving);
 
@@ -698,6 +706,10 @@ static void savegame2_load_real(struct section_file *file)
   sg_load_players(loading);
   /* [event_cache] */
   sg_load_event_cache(loading);
+  /* [trigger_cache] */
+  sg_load_trigger_cache(loading);
+  /* [wars] */
+  sg_load_wars(loading);
   /* [mapimg] */
   sg_load_mapimg(loading);
 
@@ -748,6 +760,10 @@ static void savegame2_save_real(struct section_file *file,
   sg_save_players(saving);
   /* [event_cache] */
   sg_save_event_cache(saving);
+  /* [trigger_cache] */
+  sg_save_trigger_cache(saving);
+  /* [wars] */
+  sg_save_wars(saving);
   /* [mapimg] */
   sg_save_mapimg(saving);
 
@@ -6154,6 +6170,60 @@ static void sg_save_event_cache(struct savedata *saving)
   }
 
   event_cache_save(saving->file, "event_cache");
+}
+
+/****************************************************************************
+  Load '[trigger_cache]'.
+****************************************************************************/
+static void sg_load_trigger_cache(struct loaddata *loading)
+{
+  /* Check status and return if not OK (sg_success != TRUE). */
+  sg_check_ret();
+
+  trigger_cache_load(loading->file, "trigger_cache");
+}
+
+/****************************************************************************
+  Save '[trigger_cache]'.
+****************************************************************************/
+static void sg_save_trigger_cache(struct savedata *saving)
+{
+  /* Check status and return if not OK (sg_success != TRUE). */
+  sg_check_ret();
+
+  if (saving->scenario) {
+    /* Do _not_ save events in a scenario. */
+    return;
+  }
+
+  trigger_cache_save(saving->file, "trigger_cache");
+}
+
+/****************************************************************************
+  Load '[wars]'.
+****************************************************************************/
+static void sg_load_wars(struct loaddata *loading)
+{
+  /* Check status and return if not OK (sg_success != TRUE). */
+  sg_check_ret();
+
+  wars_load(loading->file, "wars");
+}
+
+/****************************************************************************
+  Save '[wars]'.
+****************************************************************************/
+static void sg_save_wars(struct savedata *saving)
+{
+  /* Check status and return if not OK (sg_success != TRUE). */
+  sg_check_ret();
+
+  if (saving->scenario) {
+    /* Do _not_ save events in a scenario. */
+    return;
+  }
+
+  wars_save(saving->file, "wars");
 }
 
 /* =======================================================================

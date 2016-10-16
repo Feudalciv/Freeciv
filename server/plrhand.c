@@ -60,8 +60,10 @@
 #include "spaceship.h"
 #include "spacerace.h"
 #include "techtools.h"
+#include "triggers.h"
 #include "unittools.h"
 #include "voting.h"
+#include "war.h"
 
 /* server/advisors */
 #include "advdata.h"
@@ -583,6 +585,19 @@ void enter_war(struct player *pplayer, struct player *pplayer2)
 }
 
 /**************************************************************************
+   Handles a player starting a new war with another player
+   is now called when joining via call to arms or breaking a ceasefire
+**************************************************************************/
+void handle_diplomacy_declare_war(struct player *pplayer,
+                  int other_player_id,
+                  enum clause_type oldstate,
+                  const char * casus_belli)
+{
+  start_war(pplayer, player_by_number(other_player_id), fc_strdup(casus_belli));
+  handle_diplomacy_cancel_pact(pplayer, other_player_id, oldstate);
+}
+
+/**************************************************************************
   Handles a player cancelling a "pact" with another player.
 
   packet.id is id of player we want to cancel a pact with
@@ -597,11 +612,13 @@ void handle_diplomacy_cancel_pact(struct player *pplayer,
 {
   enum diplstate_type old_type;
   enum diplstate_type new_type;
+  enum diplstate_type subject_ds;
   enum dipl_reason diplcheck;
   bool repeat = FALSE;
   struct player *pplayer2 = player_by_number(other_player_id);
   struct player_diplstate *ds_plrplr2, *ds_plr2plr;
   struct unit_list *pplayer_seen_units, *pplayer2_seen_units;
+  const struct player *overlord;
 
   if (NULL == pplayer2 || players_on_same_team(pplayer, pplayer2)) {
     return;
@@ -715,38 +732,9 @@ void handle_diplomacy_cancel_pact(struct player *pplayer,
                 nation_plural_for_player(pplayer2),
                 nation_plural_for_player(pplayer),
                 diplstate_text(new_type));
-
-  /* Check fall-out of a war declaration. */
-  players_iterate_alive(other) {
-    if (other != pplayer && other != pplayer2
-        && new_type == DS_WAR && pplayers_allied(pplayer2, other)
-        && pplayers_allied(pplayer, other)) {
-      if (!players_on_same_team(pplayer, other)) {
-        /* If an ally declares war on another ally, break off your alliance
-         * to the aggressor. This prevents in-alliance wars, which are not
-         * permitted. */
-        notify_player(other, NULL, E_TREATY_BROKEN, ftc_server,
-                      _("%s has attacked your ally %s! "
-                        "You cancel your alliance to the aggressor."),
-                      player_name(pplayer),
-                      player_name(pplayer2));
-        player_diplstate_get(other, pplayer)->has_reason_to_cancel = 1;
-        handle_diplomacy_cancel_pact(other, player_number(pplayer),
-                                     CLAUSE_ALLIANCE);
-      } else {
-        /* We are in the same team as the agressor; we cannot break 
-         * alliance with him. We trust our team mate and break alliance
-         * with the attacked player */
-        notify_player(other, NULL, E_TREATY_BROKEN, ftc_server,
-                      _("Your team mate %s declared war on %s. "
-                        "You are obligated to cancel alliance with %s."),
-                      player_name(pplayer),
-                      nation_plural_for_player(pplayer2),
-                      player_name(pplayer2));
-        handle_diplomacy_cancel_pact(other, player_number(pplayer2), CLAUSE_ALLIANCE);
-      }
-    }
-  } players_iterate_alive_end;
+  if (old_type == DS_CEASEFIRE) {
+    update_wars_for_broken_ceasefire(pplayer, pplayer2);
+  }
 }
 
 /**************************************************************************

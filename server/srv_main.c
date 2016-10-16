@@ -79,6 +79,7 @@
 #include "tech.h"
 #include "unitlist.h"
 #include "version.h"
+#include "war.h"
 
 /* generator */
 #include "mapgen.h"
@@ -118,6 +119,7 @@
 #include "srv_log.h"
 #include "stdinhand.h"
 #include "techtools.h"
+#include "triggers.h"
 #include "unithand.h"
 #include "unittools.h"
 #include "voting.h"
@@ -577,6 +579,7 @@ void send_all_info(struct conn_list *dest)
   send_all_known_tiles(dest);
   send_all_known_cities(dest);
   send_all_known_units(dest);
+  send_pending_triggers(dest);
   send_spaceship_info(NULL, dest);
 }
 
@@ -2869,6 +2872,8 @@ void server_game_init(void)
   identity_number_reserve(IDENTITY_NUMBER_ZERO);
 
   event_cache_init();
+  trigger_cache_init();
+  war_cache_init();
   game_init();
   /* game_init() set game.server.plr_colors to NULL. So we need to
    * initialize the colors after. */
@@ -2916,6 +2921,8 @@ void server_game_free(void)
   } players_iterate_end;
 
   event_cache_free();
+  trigger_cache_free();
+  war_cache_free();
   log_civ_score_free();
   playercolor_free();
   citymap_free();

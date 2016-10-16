@@ -138,6 +138,10 @@ static enum diplstate_type pact_clause_to_diplstate_type(enum clause_type type)
     return DS_PEACE;
   case CLAUSE_CEASEFIRE:
     return DS_CEASEFIRE;
+  case CLAUSE_BECOME_SUBJECT:
+    return DS_SUBJECT;
+  case CLAUSE_VASSALIZE:
+    return DS_OVERLORD;
   default:
     log_error("Invalid diplomatic clause %d.", type)
     return DS_WAR;
@@ -182,7 +186,7 @@ static bool shared_vision_is_safe(struct player* pplayer,
     if (gives_shared_vision(aplayer, eplayer)) {
       enum diplstate_type ds = player_diplstate_get(pplayer, eplayer)->type;
 
-      if (ds != DS_NO_CONTACT && ds != DS_ALLIANCE) {
+      if (ds != DS_NO_CONTACT && ds != DS_ALLIANCE && ds != DS_SUBJECT && ds != DS_OVERLORD) {
         return FALSE;
       }
     }
@@ -446,7 +450,7 @@ static int dai_goldequiv_clause(struct ai_type *ait,
     break;
 
   case CLAUSE_SEAMAP:
-    if (!give || ds_after == DS_ALLIANCE) {
+    if (!give || ds_after == DS_ALLIANCE || ds_after == DS_SUBJECT || ds_after == DS_OVERLORD) {
       /* Useless to us - we're omniscient! And allies get it for free! */
       worth = 0;
     } else {
@@ -466,7 +470,7 @@ static int dai_goldequiv_clause(struct ai_type *ait,
     break;
 
   case CLAUSE_MAP:
-    if (!give || ds_after == DS_ALLIANCE) {
+    if (!give || ds_after == DS_ALLIANCE || ds_after == DS_SUBJECT || ds_after == DS_OVERLORD) {
       /* Useless to us - we're omniscient! And allies get it for free! */
       worth = 0;
     } else {
@@ -542,7 +546,7 @@ static int dai_goldequiv_clause(struct ai_type *ait,
 
   case CLAUSE_EMBASSY:
     if (give) {
-      if (ds_after == DS_ALLIANCE) {
+      if (ds_after == DS_ALLIANCE || ds_after == DS_SUBJECT || ds_after == DS_OVERLORD) {
         worth = 0;
       } else if (ds_after == DS_PEACE) {
         worth = -5 * game.info.turn;
@@ -758,6 +762,12 @@ static int dai_war_desire(struct ai_type *ait, struct player *pplayer,
   struct adv_data *adv = adv_data_get(pplayer, NULL);
   int want = 0, fear = 0, distance = 0, settlers = 0, cities = 0;
   struct player_spaceship *ship = &target->spaceship;
+  struct player *target_overlord;
+
+  if ((target_overlord = get_player_overlord(target)) != NULL) {
+    /* If target has an overlord, use war desire for overlord instead */
+    return dai_war_desire(ait, pplayer, target_overlord);
+  }
 
   city_list_iterate(target->cities, pcity) {
     want += 100; /* base city want */
@@ -1647,6 +1657,8 @@ void dai_diplomacy_actions(struct ai_type *ait, struct player *pplayer)
     case DS_TEAM:
       dai_share(pplayer, aplayer);
       break;
+    case DS_SUBJECT:
+    case DS_OVERLORD:
     case DS_ALLIANCE:
       /* See if our allies are diligently declaring war on our enemies... */
       if (adip->at_war_with_ally) {

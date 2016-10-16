@@ -1,4 +1,4 @@
-/********************************************************************** 
+/**********************************************************************
  Freeciv - Copyright (C) 1996 - A Kjeldberg, L Gregersen, P Unold
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -149,6 +149,8 @@ enum diplstate_type {
   DS_PEACE,
   DS_ALLIANCE,
   DS_NO_CONTACT,
+  DS_SUBJECT,
+  DS_OVERLORD,
   DS_TEAM,
   DS_LAST	/* leave this last */
 };
@@ -235,6 +237,8 @@ struct player {
   struct attribute_block_s attribute_block_buffer;
 
   struct dbv tile_known;
+
+  struct war_list *current_wars;
 
   struct rgbcolor *rgb;
 
@@ -395,6 +399,8 @@ int player_in_territory(const struct player *pplayer,
 
 bool is_barbarian(const struct player *pplayer);
 
+const struct player * get_player_overlord(const struct player *pplayer);
+
 bool gives_shared_vision(const struct player *me, const struct player *them);
 
 /* iterate over all player slots */
@@ -423,6 +429,16 @@ bool gives_shared_vision(const struct player *me, const struct player *them);
     }
 #define players_iterate_alive_end                                           \
   } players_iterate_end;
+
+/* iterate over all players which are alive and subjects of the given player */
+#define player_subjects_iterate(_pplayer, _psubject)                          \
+  players_iterate_alive(_psubject) {                                          \
+    enum diplstate_type ds = player_diplstate_get(_pplayer, _psubject)->type; \
+    if (ds != DS_SUBJECT) {                                                   \
+        continue;                                                             \
+    }
+#define player_subjects_iterate_end                                           \
+  } players_iterate_alive_end;
 
 /* get 'struct player_list' and related functions: */
 #define SPECLIST_TAG player

@@ -3,7 +3,7 @@
 Max used id:
 ============
 
-Max id: 236
+Max id: 239
 
 Packets are not ordered by their id, but by their category. New packet
 with higher id may get added to existing category, and not to the end of file.
@@ -1065,6 +1065,12 @@ PACKET_DIPLOMACY_CANCEL_PACT = 105; cs, dsend
   CLAUSE clause;
 end
 
+PACKET_DIPLOMACY_DECLARE_WAR = 239; cs, dsend
+  PLAYER other_player_id;
+  CLAUSE clause;
+  STRING casus_belli[MAX_LEN_MSG];
+end
+
 /**************  Report packets **********************/
 
 PACKET_PAGE_MSG_OLD = 110; sc, lsend
@@ -1996,7 +2002,20 @@ end
 
 /************** Server Editor Packets **********************/
 
-PACKET_EDIT_OBJECT_CREATED = 219; sc, dsend
+PACKET_EDIT_OBJECT_CREATED = 219; sc, handle-per-conn, dsend
   SINT32 tag;
   SINT32 id;
+end
+
+PACKET_TRIGGER_RESPONSE = 237; cs, handle-per-conn, dsend
+  STRING name[256];
+  UINT8 response;
+end
+
+PACKET_TRIGGER = 238; sc, handle-via-packet, handle-per-conn
+  STRING name[256];
+  STRING title[256];
+  STRING desc[MAX_LEN_PACKET];
+  UINT8 responses_num;
+  STRING responses[32:responses_num][MAX_LEN_NAME];
 end
